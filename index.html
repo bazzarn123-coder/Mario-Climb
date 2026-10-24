@@ -251,17 +251,18 @@
             </div>
         </div>
 
-        <!-- TOUCH CONTROLS (Raised up via bottom-24 to avoid mobile navigation bar) -->
+        <!-- TOUCH CONTROLS (Raised up via bottom-24 with Left Button, Horizontal Slider Controller, and Right Button) -->
         <div id="touchControls" class="absolute bottom-24 left-0 w-full px-5 flex justify-between items-center pointer-events-none z-10 md:hidden">
             <!-- Left Button -->
             <button id="leftTouchBtn" class="pointer-events-auto w-14 h-14 bg-white/60 active:bg-white/90 backdrop-blur-md rounded-full border-2 border-white flex items-center justify-center text-slate-800 text-xl shadow-lg">
                 <i class="fa-solid fa-arrow-left"></i>
             </button>
 
-            <!-- Center Virtual Joystick -->
-            <div id="virtualJoystick" class="pointer-events-auto relative w-20 h-20 bg-white/30 backdrop-blur-md rounded-full border-2 border-white/70 flex items-center justify-center shadow-lg">
-                <div id="joystickKnob" class="absolute w-10 h-10 bg-white/90 rounded-full shadow-md transition-transform duration-75 flex items-center justify-center text-sky-600 text-xs">
-                    <i class="fa-solid fa-gamepad"></i>
+            <!-- Center Horizontal Slider Controller -->
+            <div id="horizontalSlider" class="pointer-events-auto relative w-36 h-14 bg-white/30 backdrop-blur-md rounded-full border-2 border-white/70 flex items-center px-2 shadow-lg">
+                <div class="absolute inset-x-0 text-center text-[10px] font-game text-white/80 pointer-events-none">SLIDE TO MOVE</div>
+                <div id="sliderThumb" class="absolute left-1/2 -translate-x-1/2 w-10 h-10 bg-white/90 rounded-full shadow-md transition-transform duration-75 flex items-center justify-center text-sky-600 text-xs">
+                    <i class="fa-solid fa-arrows-left-right"></i>
                 </div>
             </div>
 
@@ -299,7 +300,6 @@
                 const gain = audioCtx.createGain();
 
                 osc.type = 'sine';
-                // Classic Mario coin frequency transition (B5 to E6)
                 osc.frequency.setValueAtTime(987.77, now); // B5
                 osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
 
@@ -1106,60 +1106,53 @@
         rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; });
         rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys.right = false; });
 
-        // Virtual Joystick Controller Logic
-        const joystick = document.getElementById('virtualJoystick');
-        const knob = document.getElementById('joystickKnob');
+        // Horizontal Slider Controller Logic
+        const slider = document.getElementById('horizontalSlider');
+        const thumb = document.getElementById('sliderThumb');
 
-        let joystickTouchId = null;
-        let joystickCenterX = 0;
-        let joystickCenterY = 0;
+        let sliderTouchId = null;
+        let sliderCenterX = 0;
 
-        joystick.addEventListener('touchstart', (e) => {
+        slider.addEventListener('touchstart', (e) => {
             e.preventDefault();
             initAudio();
             const touch = e.changedTouches[0];
-            joystickTouchId = touch.identifier;
-            const rect = joystick.getBoundingClientRect();
-            joystickCenterX = rect.left + rect.width / 2;
-            joystickCenterY = rect.top + rect.height / 2;
-            handleJoystickMove(touch.clientX, touch.clientY);
+            sliderTouchId = touch.identifier;
+            const rect = slider.getBoundingClientRect();
+            sliderCenterX = rect.left + rect.width / 2;
+            handleSliderMove(touch.clientX);
         });
 
-        joystick.addEventListener('touchmove', (e) => {
+        slider.addEventListener('touchmove', (e) => {
             e.preventDefault();
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const touch = e.changedTouches[i];
-                if (touch.identifier === joystickTouchId) {
-                    handleJoystickMove(touch.clientX, touch.clientY);
+                if (touch.identifier === sliderTouchId) {
+                    handleSliderMove(touch.clientX);
                 }
             }
         });
 
-        joystick.addEventListener('touchend', (e) => {
+        slider.addEventListener('touchend', (e) => {
             e.preventDefault();
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const touch = e.changedTouches[i];
-                if (touch.identifier === joystickTouchId) {
-                    joystickTouchId = null;
+                if (touch.identifier === sliderTouchId) {
+                    sliderTouchId = null;
                     keys.left = false;
                     keys.right = false;
-                    knob.style.transform = `translate(0px, 0px)`;
+                    thumb.style.transform = `translateX(-50%)`;
                 }
             }
         });
 
-        function handleJoystickMove(clientX, clientY) {
-            const maxRadius = 30;
-            let dx = clientX - joystickCenterX;
-            let dy = clientY - joystickCenterY;
-            const dist = Math.hypot(dx, dy);
+        function handleSliderMove(clientX) {
+            const maxOffset = 45;
+            let dx = clientX - sliderCenterX;
+            if (dx < -maxOffset) dx = -maxOffset;
+            if (dx > maxOffset) dx = maxOffset;
 
-            if (dist > maxRadius) {
-                dx = (dx / dist) * maxRadius;
-                dy = (dy / dist) * maxRadius;
-            }
-
-            knob.style.transform = `translate(${dx}px, ${dy}px)`;
+            thumb.style.transform = `translateX(calc(-50% + ${dx}px))`;
 
             if (dx < -8) {
                 keys.left = true;
@@ -1171,14 +1164,10 @@
                 keys.left = false;
                 keys.right = false;
             }
-
-            if (dy < -20) {
-                performDoubleJump();
-            }
         }
 
         canvas.addEventListener('touchstart', (e) => {
-            if (e.target !== leftBtn && e.target !== rightBtn && !joystick.contains(e.target)) {
+            if (e.target !== leftBtn && e.target !== rightBtn && !slider.contains(e.target)) {
                 initAudio();
                 performDoubleJump();
             }
