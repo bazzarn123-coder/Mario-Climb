@@ -1,9 +1,8 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mario Climb</title>
     <!-- Browser Address Bar Icon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍄</text></svg>">
@@ -54,32 +53,32 @@
         }
     </style>
 </head>
-<body class="w-full h-full bg-slate-900 select-none overflow-hidden m-0 p-0">
+<body class="w-full h-full bg-slate-900 select-none overflow-hidden flex justify-center items-center">
 
-    <!-- Dynamically Stretching Fullscreen Game Container -->
-    <div id="gameContainer" class="relative w-full h-full bg-sky-400 overflow-hidden flex flex-col m-0 p-0">
+    <!-- Main Game Container -->
+    <div id="gameContainer" class="relative w-full h-full max-w-md max-h-[100vh] md:max-h-[900px] mx-auto bg-sky-400 shadow-2xl overflow-hidden rounded-none md:rounded-3xl border-0 md:border-4 border-white/50 flex flex-col">
         
-        <!-- Game Canvas (Resizes to exact viewport dimensions) -->
+        <!-- Game Canvas -->
         <canvas id="gameCanvas" class="w-full h-full block bg-transparent relative z-0"></canvas>
 
         <!-- HUD Overlay -->
         <div id="hud" class="absolute top-0 left-0 w-full p-4 flex justify-between items-start pointer-events-none z-10">
             <!-- Left Side: Score & Multiplier -->
             <div class="flex flex-col gap-1">
-                <div class="flex items-center gap-2 bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-2xl shadow-md border border-white">
+                <div class="flex items-center gap-2 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-md border border-white">
                     <i class="fa-solid fa-trophy text-amber-500 text-lg"></i>
                     <span id="scoreText" class="font-game text-xl text-slate-800">0</span>
                 </div>
                 <!-- Combo Badge -->
                 <div id="comboBadge" class="hidden flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-3 py-1 rounded-full shadow-lg border border-amber-200 animate-pulse">
                     <i class="fa-solid fa-bolt text-xs"></i>
-                    <span id="comboText" class="font-game text-xs sm:text-sm tracking-wide">2x COMBO</span>
+                    <span id="comboText" class="font-game text-sm tracking-wide">2x COMBO</span>
                 </div>
             </div>
 
             <!-- Right Side: Coins & Power-up Status -->
             <div class="flex flex-col items-end gap-2">
-                <div class="flex items-center gap-2 bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-2xl shadow-md border border-white pointer-events-auto">
+                <div class="flex items-center gap-2 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-md border border-white pointer-events-auto">
                     <i class="fa-solid fa-coins text-amber-400 text-lg animate-bounce"></i>
                     <span id="starText" class="font-game text-xl text-slate-800">0</span>
                 </div>
@@ -89,7 +88,7 @@
             </div>
 
             <!-- Pause Button -->
-            <button id="pauseBtn" onclick="togglePause()" class="pointer-events-auto bg-white/90 backdrop-blur-md w-11 h-11 rounded-2xl flex items-center justify-center shadow-md border border-white active:scale-95 transition">
+            <button id="pauseBtn" onclick="togglePause()" class="pointer-events-auto bg-white/90 backdrop-blur-md w-10 h-10 rounded-2xl flex items-center justify-center shadow-md border border-white active:scale-95 transition">
                 <i class="fa-solid fa-pause text-slate-700 text-lg"></i>
             </button>
         </div>
@@ -103,33 +102,34 @@
         <!-- START SCREEN OVERLAY -->
         <div id="startOverlay" class="absolute inset-0 bg-gradient-to-b from-sky-400/90 via-sky-300/95 to-emerald-500/95 z-20 flex flex-col justify-between p-6 overflow-y-auto">
             <div class="text-center mt-6">
-                <div class="inline-block bg-white/90 backdrop-blur-md px-6 py-3.5 rounded-3xl shadow-xl border-2 border-sky-200 mb-2">
-                    <h1 class="font-game text-3xl sm:text-5xl text-sky-600 tracking-wider drop-shadow-sm">MARIO CLIMB</h1>
+                <div class="inline-block bg-white/90 backdrop-blur-md px-6 py-3 rounded-3xl shadow-xl border-2 border-sky-200 mb-2">
+                    <h1 class="font-game text-4xl text-sky-600 tracking-wider drop-shadow-sm">MARIO CLIMB</h1>
                     <p class="text-xs font-bold text-sky-500 uppercase tracking-widest mt-0.5">Coins & Clouds Edition</p>
                 </div>
             </div>
 
             <!-- Character Preview Box -->
-            <div class="my-auto flex flex-col items-center justify-center gap-4">
-                <div class="relative w-32 h-32 sm:w-40 sm:h-40 bg-white/60 backdrop-blur-md rounded-full flex items-center justify-center shadow-inner border-4 border-white/80 overflow-hidden">
-                    <img src="man.png" alt="Character" class="h-24 sm:h-32 w-auto object-contain transform hover:scale-110 transition duration-300">
+            <div class="my-auto flex flex-col items-center justify-center gap-3">
+                <div class="relative w-32 h-32 bg-white/60 backdrop-blur-md rounded-full flex items-center justify-center shadow-inner border-4 border-white/80 overflow-hidden">
+                    <img src="man.png" alt="Character" class="h-24 w-auto object-contain transform hover:scale-110 transition duration-300">
+                    <div id="shieldPreview" class="hidden absolute inset-0 border-4 border-cyan-400 rounded-full animate-ping opacity-75"></div>
                 </div>
 
                 <!-- High Score & Coin Display -->
                 <div class="flex gap-4">
-                    <div class="bg-white/90 px-5 py-2.5 rounded-2xl shadow border border-white/80 text-center min-w-[100px]">
+                    <div class="bg-white/90 px-4 py-2 rounded-2xl shadow border border-white/80 text-center">
                         <div class="text-[10px] uppercase font-bold text-slate-400">High Score</div>
-                        <div id="menuHighScore" class="font-game text-xl text-slate-700">0</div>
+                        <div id="menuHighScore" class="font-game text-lg text-slate-700">0</div>
                     </div>
-                    <div class="bg-white/90 px-5 py-2.5 rounded-2xl shadow border border-white/80 text-center min-w-[100px]">
+                    <div class="bg-white/90 px-4 py-2 rounded-2xl shadow border border-white/80 text-center">
                         <div class="text-[10px] uppercase font-bold text-slate-400">Total Coins</div>
-                        <div id="menuTotalStars" class="font-game text-xl text-amber-500">0</div>
+                        <div id="menuTotalStars" class="font-game text-lg text-amber-500">0</div>
                     </div>
                 </div>
             </div>
 
             <!-- Action Buttons Grid -->
-            <div class="flex flex-col gap-3 mb-4 w-full max-w-sm mx-auto">
+            <div class="flex flex-col gap-3 mb-4 w-full max-w-xs mx-auto">
                 <button onclick="startGame()" class="btn-bounce w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-game text-2xl py-4 rounded-2xl shadow-lg border-2 border-emerald-300 flex items-center justify-center gap-3">
                     <i class="fa-solid fa-play"></i> PLAY NOW
                 </button>
@@ -138,7 +138,7 @@
                     <button onclick="openModal('shopModal')" class="btn-bounce bg-white/90 hover:bg-white text-slate-700 font-game py-3 rounded-2xl shadow border border-white flex items-center justify-center gap-2">
                         <i class="fa-solid fa-store text-amber-500"></i> SHOP
                     </button>
-                    <button onclick="openModal('missionsModal')" class="btn-bounce bg-white/90 hover:bg-white text-slate-700 font-game py-3 rounded-2xl shadow border border-white flex items-center justify-center gap-2">
+                    <button onclick="openModal('missionsModal')" class="btn-bounce bg-white/90 hover:bg-white text-slate-700 font-game py-3 rounded-2xl shadow border border-white flex items-center justify-center gap-2 relative">
                         <i class="fa-solid fa-list-check text-indigo-500"></i> TASKS
                     </button>
                 </div>
@@ -203,8 +203,8 @@
         </div>
 
         <!-- SHOP MODAL -->
-        <div id="shopModal" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-40 flex flex-col p-4 items-center justify-center">
-            <div class="glass-panel w-full max-w-md h-full max-h-[600px] rounded-3xl p-5 flex flex-col justify-between overflow-hidden">
+        <div id="shopModal" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-40 flex flex-col p-4">
+            <div class="glass-panel w-full h-full rounded-3xl p-5 flex flex-col justify-between overflow-hidden">
                 <div class="flex justify-between items-center pb-3 border-b border-slate-200">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-store text-amber-500 text-xl"></i>
@@ -230,8 +230,8 @@
         </div>
 
         <!-- MISSIONS & ACHIEVEMENTS MODAL -->
-        <div id="missionsModal" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-40 flex flex-col p-4 items-center justify-center">
-            <div class="glass-panel w-full max-w-md h-full max-h-[600px] rounded-3xl p-5 flex flex-col justify-between overflow-hidden">
+        <div id="missionsModal" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-40 flex flex-col p-4">
+            <div class="glass-panel w-full h-full rounded-3xl p-5 flex flex-col justify-between overflow-hidden">
                 <div class="flex justify-between items-center pb-3 border-b border-slate-200">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-trophy text-indigo-500 text-xl"></i>
@@ -253,8 +253,8 @@
             </div>
         </div>
 
-        <!-- TOUCH CONTROLS (Safe Area Bottom Padding) -->
-        <div id="touchControls" class="absolute bottom-6 left-0 w-full px-6 flex justify-between pointer-events-none z-10 sm:hidden" style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom));">
+        <!-- TOUCH CONTROLS (Safe Area Padding) -->
+        <div id="touchControls" class="absolute bottom-6 left-0 w-full px-6 flex justify-between pointer-events-none z-10 md:hidden pb-4" style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom));">
             <button id="leftTouchBtn" class="pointer-events-auto w-16 h-16 bg-white/50 active:bg-white/80 backdrop-blur-md rounded-full border-2 border-white flex items-center justify-center text-slate-800 text-2xl shadow-lg">
                 <i class="fa-solid fa-arrow-left"></i>
             </button>
@@ -318,6 +318,7 @@
         const imgBlue = new Image(); imgBlue.src = 'blue.png';
         const imgPurple = new Image(); imgPurple.src = 'purple.png';
         const imgMan = new Image(); imgMan.src = 'man.png';
+        const backgroundImg = new Image(); backgroundImg.src = 'bg.jpg';
 
         let isGameRunning = false;
         let isPaused = false;
@@ -343,7 +344,7 @@
         let starsList = [];
         let powerupItems = [];
         let particles = [];
-        let marioClouds = []; // Mario 64 style drifting background clouds
+        let marioClouds = [];
 
         const keys = { left: false, right: false };
 
@@ -381,21 +382,21 @@
             particles = [];
             marioClouds = [];
 
-            // Generate Mario 64 Style Background Sky Clouds safely within screen bounds
-            for (let i = 0; i < 8; i++) {
+            // Mario 64 Style Background Sky Clouds safely within screen bounds
+            for (let i = 0; i < 6; i++) {
                 marioClouds.push({
                     x: Math.random() * canvas.width,
-                    y: 40 + Math.random() * (canvas.height * 0.55),
-                    size: 40 + Math.random() * 40,
-                    speed: 0.15 + Math.random() * 0.25
+                    y: 60 + Math.random() * (canvas.height * 0.65),
+                    size: 45 + Math.random() * 35,
+                    speed: 0.15 + Math.random() * 0.2
                 });
             }
 
             // Spawn Starting Platform
             platforms.push({
-                x: canvas.width / 2 - 55,
+                x: canvas.width / 2 - 50,
                 y: canvas.height - 80,
-                width: 110, height: 22,
+                width: 100, height: 22,
                 type: 'standard',
                 hits: 0, broken: false
             });
@@ -410,7 +411,14 @@
         }
 
         function spawnPlatformAt(yPos) {
-            const width = Math.max(65, Math.min(120, canvas.width * 0.22));
+            // Base starting width is 100px
+            const initialWidth = 100;
+            // Every 1,000 score reduces the platform width by 5% (compounding: 100 -> 95 -> 90.25 -> 85.73 ...)
+            const thousandsReached = Math.floor(gameScore / 1000);
+            const shrinkMultiplier = Math.pow(0.95, thousandsReached);
+            
+            // Calculate width and enforce a fair minimum jumpable width (35px)
+            const width = Math.max(35, initialWidth * shrinkMultiplier);
             const xPos = Math.random() * (canvas.width - width);
             
             let pType = 'standard';
@@ -470,7 +478,6 @@
                 player.vx *= 0.8;
             }
 
-            // Directional flip based on movement velocity
             if (player.vx < -0.2) {
                 player.facingRight = false;
             } else if (player.vx > 0.2) {
@@ -504,11 +511,9 @@
                         player.y + player.height >= p.y &&
                         player.y + player.height <= p.y + p.height + player.vy) {
                         
-                        // Bounce off platform
                         player.vy = player.jumpStrength;
                         createParticles(player.x + player.width / 2, player.y + player.height, '#ffffff', 5);
 
-                        // Fragile platform breaks after 1 hit
                         if (p.type === 'fragile') {
                             p.hits++;
                             if (p.hits >= 1) {
@@ -538,9 +543,9 @@
                         const dx = (player.x + player.width/2) - (s.x + 10);
                         const dy = (player.y + player.height/2) - (s.y + 10);
                         const dist = Math.hypot(dx, dy);
-                        if (dist < 200) {
-                            s.x += (dx / dist) * 8;
-                            s.y += (dy / dist) * 8;
+                        if (dist < 180) {
+                            s.x += (dx / dist) * 7;
+                            s.y += (dy / dist) * 7;
                         }
                     }
                 });
@@ -654,11 +659,15 @@
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Sky Background
-            ctx.fillStyle = '#38bdf8';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // 1. Draw Background Image Behind All Gameplay
+            if (backgroundImg.complete && backgroundImg.naturalWidth !== 0) {
+                ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+            } else {
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
 
-            // Mario 64 Style Drifting Background Clouds (Never Leave Screen)
+            // 2. Mario 64 Style Drifting Clouds (Screen-space)
             marioClouds.forEach(c => {
                 c.x += c.speed;
                 if (c.x > canvas.width + 100) c.x = -100;
@@ -671,16 +680,7 @@
                 ctx.fill();
             });
 
-            // Fixed Green Ground Layer
-            const groundHeight = canvas.height * 0.5;
-            const groundY = canvas.height - groundHeight;
-            ctx.fillStyle = '#10b981';
-            ctx.fillRect(0, groundY, canvas.width, groundHeight);
-            
-            // Grass trim border
-            ctx.fillStyle = '#059669';
-            ctx.fillRect(0, groundY, canvas.width, 10);
-
+            // 3. Gameplay World Translation (Platforms, Coins, Player)
             ctx.save();
             ctx.translate(0, cameraY);
 
@@ -744,7 +744,7 @@
                 ctx.restore();
             });
 
-            // Player character with proper direction turning
+            // Player character
             if (imgMan.complete && imgMan.naturalWidth !== 0) {
                 ctx.save();
                 ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
@@ -823,7 +823,7 @@
                 card.className = 'bg-white/90 p-3.5 rounded-2xl shadow border border-slate-100 flex items-center justify-between gap-3';
                 card.innerHTML = `
                     <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-2xl ${conf.bgColor} text-white flex items-center justify-center text-xl shadow-md flex-shrink-0">
+                        <div class="w-12 h-12 rounded-2xl ${conf.bgColor} text-white flex items-center justify-center text-xl shadow-md">
                             <i class="fa-solid ${conf.icon}"></i>
                         </div>
                         <div>
@@ -837,7 +837,7 @@
                         </div>
                     </div>
                     <button onclick="buyPowerup('${key}')" ${isMax || userProgress.stars < cost ? 'disabled' : ''} 
-                            class="btn-bounce px-3 py-2 rounded-xl font-game text-xs flex items-center gap-1 flex-shrink-0 ${isMax ? 'bg-slate-200 text-slate-400' : 'bg-amber-400 hover:bg-amber-500 text-white shadow-md disabled:opacity-50'}">
+                            class="btn-bounce px-3 py-2 rounded-xl font-game text-xs flex items-center gap-1 ${isMax ? 'bg-slate-200 text-slate-400' : 'bg-amber-400 hover:bg-amber-500 text-white shadow-md disabled:opacity-50'}">
                         ${isMax ? 'MAXED' : `<i class="fa-solid fa-coins"></i> ${cost}`}
                     </button>
                 `;
@@ -880,7 +880,7 @@
                         </div>
                     </div>
                     <button ${isDone || item.current < item.req ? 'disabled' : ''} onclick="claimReward('${item.id}', '${activeTab}')"
-                            class="btn-bounce px-3 py-2 rounded-xl font-game text-xs flex-shrink-0 ${isDone ? 'bg-slate-200 text-slate-400' : (item.current >= item.req ? 'bg-emerald-500 text-white shadow-md' : 'bg-slate-100 text-slate-400')}">
+                            class="btn-bounce px-3 py-2 rounded-xl font-game text-xs ${isDone ? 'bg-slate-200 text-slate-400' : (item.current >= item.req ? 'bg-emerald-500 text-white shadow-md' : 'bg-slate-100 text-slate-400')}">
                         ${isDone ? 'DONE' : `+${item.reward} 🪙`}
                     </button>
                 `;
@@ -1044,4 +1044,3 @@
     </script>
 </body>
 </html>
-```
