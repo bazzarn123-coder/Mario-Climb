@@ -49,10 +49,6 @@
         .toast-anim {
             animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
-        /* Safe area bottom handling to avoid mobile navigation bars */
-        .safe-bottom {
-            padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
-        }
     </style>
 </head>
 <body class="flex items-center justify-center h-screen w-screen overflow-hidden bg-slate-900 select-none">
@@ -255,8 +251,8 @@
             </div>
         </div>
 
-        <!-- TOUCH CONTROLS (Safely padded above mobile bottom home bars with joystick & directional buttons) -->
-        <div id="touchControls" class="absolute bottom-0 left-0 w-full px-5 py-3 safe-bottom flex justify-between items-center pointer-events-none z-10 md:hidden bg-gradient-to-t from-slate-950/40 to-transparent">
+        <!-- TOUCH CONTROLS (Raised up via bottom-24 to avoid mobile navigation bar) -->
+        <div id="touchControls" class="absolute bottom-24 left-0 w-full px-5 flex justify-between items-center pointer-events-none z-10 md:hidden">
             <!-- Left Button -->
             <button id="leftTouchBtn" class="pointer-events-auto w-14 h-14 bg-white/60 active:bg-white/90 backdrop-blur-md rounded-full border-2 border-white flex items-center justify-center text-slate-800 text-xl shadow-lg">
                 <i class="fa-solid fa-arrow-left"></i>
@@ -280,6 +276,68 @@
     <!-- GAME ENGINE CODE -->
     <script>
         const STORAGE_KEY = 'mario_climb_save_v3';
+
+        // Web Audio API Synthesizer for Sound Effects
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Classic Mario Coin Sound
+        function playCoinSound() {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'sine';
+                // Classic Mario coin frequency transition (B5 to E6)
+                osc.frequency.setValueAtTime(987.77, now); // B5
+                osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.35);
+            } catch(e) {}
+        }
+
+        // Platform Bouncing Sound Effect
+        function playBounceSound() {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(320, now + 0.12);
+
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } catch(e) {}
+        }
 
         let userProgress = {
             stars: 0,
@@ -514,6 +572,7 @@
                         
                         // Bounce off platform
                         player.vy = player.jumpStrength;
+                        playBounceSound();
                         createParticles(player.x + player.width / 2, player.y + player.height, '#ffffff', 5);
 
                         // Fragile/Delicate platform withstands bounce once then breaks
@@ -564,6 +623,7 @@
                         player.y + player.height > s.y) {
                         
                         s.collected = true;
+                        playCoinSound();
                         const gained = 1 * comboMultiplier;
                         sessionStars += gained;
                         userProgress.stars += gained;
@@ -585,6 +645,7 @@
                     item.collected = true;
                     if (item.type === 'magnet') activePowerups.magnetTimer = POWERUPS_CONFIG.magnet.durations[userProgress.upgrades.magnet || 0];
                     if (item.type === 'rocket') activePowerups.rocketTimer = POWERUPS_CONFIG.rocket.durations[userProgress.upgrades.rocket || 0];
+                    playCoinSound();
                     triggerToast(`Activated ${item.type.toUpperCase()}!`, 'fa-bolt');
                 }
             });
@@ -642,6 +703,7 @@
             if (activePowerups.doubleJumps > 0) {
                 activePowerups.doubleJumps--;
                 player.vy = player.jumpStrength * 1.1;
+                playBounceSound();
                 createParticles(player.x + player.width/2, player.y + player.height, '#10b981', 10);
                 triggerToast('Double Jump Used!', 'fa-shoe-prints');
             }
@@ -929,6 +991,7 @@
         }
 
         function startGame() {
+            initAudio();
             document.getElementById('startOverlay').classList.add('hidden');
             document.getElementById('gameOverOverlay').classList.add('hidden');
             document.getElementById('pauseOverlay').classList.add('hidden');
@@ -1053,6 +1116,7 @@
 
         joystick.addEventListener('touchstart', (e) => {
             e.preventDefault();
+            initAudio();
             const touch = e.changedTouches[0];
             joystickTouchId = touch.identifier;
             const rect = joystick.getBoundingClientRect();
@@ -1115,6 +1179,7 @@
 
         canvas.addEventListener('touchstart', (e) => {
             if (e.target !== leftBtn && e.target !== rightBtn && !joystick.contains(e.target)) {
+                initAudio();
                 performDoubleJump();
             }
         });
