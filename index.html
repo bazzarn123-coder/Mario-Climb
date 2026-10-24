@@ -49,6 +49,10 @@
         .toast-anim {
             animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
+        /* Safe area bottom handling to avoid mobile navigation bars */
+        .safe-bottom {
+            padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+        }
     </style>
 </head>
 <body class="flex items-center justify-center h-screen w-screen overflow-hidden bg-slate-900 select-none">
@@ -251,12 +255,22 @@
             </div>
         </div>
 
-        <!-- TOUCH CONTROLS -->
-        <div id="touchControls" class="absolute bottom-4 left-0 w-full px-6 flex justify-between pointer-events-none z-10 md:hidden">
-            <button id="leftTouchBtn" class="pointer-events-auto w-16 h-16 bg-white/50 active:bg-white/80 backdrop-blur-md rounded-full border-2 border-white flex items-center justify-center text-slate-800 text-2xl shadow-lg">
+        <!-- TOUCH CONTROLS (Safely padded above mobile bottom home bars with joystick & directional buttons) -->
+        <div id="touchControls" class="absolute bottom-0 left-0 w-full px-5 py-3 safe-bottom flex justify-between items-center pointer-events-none z-10 md:hidden bg-gradient-to-t from-slate-950/40 to-transparent">
+            <!-- Left Button -->
+            <button id="leftTouchBtn" class="pointer-events-auto w-14 h-14 bg-white/60 active:bg-white/90 backdrop-blur-md rounded-full border-2 border-white flex items-center justify-center text-slate-800 text-xl shadow-lg">
                 <i class="fa-solid fa-arrow-left"></i>
             </button>
-            <button id="rightTouchBtn" class="pointer-events-auto w-16 h-16 bg-white/50 active:bg-white/80 backdrop-blur-md rounded-full border-2 border-white flex items-center justify-center text-slate-800 text-2xl shadow-lg">
+
+            <!-- Center Virtual Joystick -->
+            <div id="virtualJoystick" class="pointer-events-auto relative w-20 h-20 bg-white/30 backdrop-blur-md rounded-full border-2 border-white/70 flex items-center justify-center shadow-lg">
+                <div id="joystickKnob" class="absolute w-10 h-10 bg-white/90 rounded-full shadow-md transition-transform duration-75 flex items-center justify-center text-sky-600 text-xs">
+                    <i class="fa-solid fa-gamepad"></i>
+                </div>
+            </div>
+
+            <!-- Right Button -->
+            <button id="rightTouchBtn" class="pointer-events-auto w-14 h-14 bg-white/60 active:bg-white/90 backdrop-blur-md rounded-full border-2 border-white flex items-center justify-center text-slate-800 text-xl shadow-lg">
                 <i class="fa-solid fa-arrow-right"></i>
             </button>
         </div>
@@ -1020,7 +1034,7 @@
             if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
         });
 
-        // Touch Listeners
+        // Touch Listeners for directional buttons
         const leftBtn = document.getElementById('leftTouchBtn');
         const rightBtn = document.getElementById('rightTouchBtn');
 
@@ -1029,8 +1043,80 @@
         rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; });
         rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys.right = false; });
 
+        // Virtual Joystick Controller Logic
+        const joystick = document.getElementById('virtualJoystick');
+        const knob = document.getElementById('joystickKnob');
+
+        let joystickTouchId = null;
+        let joystickCenterX = 0;
+        let joystickCenterY = 0;
+
+        joystick.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            joystickTouchId = touch.identifier;
+            const rect = joystick.getBoundingClientRect();
+            joystickCenterX = rect.left + rect.width / 2;
+            joystickCenterY = rect.top + rect.height / 2;
+            handleJoystickMove(touch.clientX, touch.clientY);
+        });
+
+        joystick.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                if (touch.identifier === joystickTouchId) {
+                    handleJoystickMove(touch.clientX, touch.clientY);
+                }
+            }
+        });
+
+        joystick.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                if (touch.identifier === joystickTouchId) {
+                    joystickTouchId = null;
+                    keys.left = false;
+                    keys.right = false;
+                    knob.style.transform = `translate(0px, 0px)`;
+                }
+            }
+        });
+
+        function handleJoystickMove(clientX, clientY) {
+            const maxRadius = 30;
+            let dx = clientX - joystickCenterX;
+            let dy = clientY - joystickCenterY;
+            const dist = Math.hypot(dx, dy);
+
+            if (dist > maxRadius) {
+                dx = (dx / dist) * maxRadius;
+                dy = (dy / dist) * maxRadius;
+            }
+
+            knob.style.transform = `translate(${dx}px, ${dy}px)`;
+
+            if (dx < -8) {
+                keys.left = true;
+                keys.right = false;
+            } else if (dx > 8) {
+                keys.right = true;
+                keys.left = false;
+            } else {
+                keys.left = false;
+                keys.right = false;
+            }
+
+            if (dy < -20) {
+                performDoubleJump();
+            }
+        }
+
         canvas.addEventListener('touchstart', (e) => {
-            if (e.target !== leftBtn && e.target !== rightBtn) performDoubleJump();
+            if (e.target !== leftBtn && e.target !== rightBtn && !joystick.contains(e.target)) {
+                performDoubleJump();
+            }
         });
 
         window.onload = () => {
