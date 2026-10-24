@@ -97,7 +97,7 @@
             <div id="toastMsg" class="font-game text-xs tracking-wide">Achievement Unlocked!</div>
         </div>
 
-        <!-- START SCREEN OVERLAY (Padded safely above navigation bar) -->
+        <!-- START SCREEN OVERLAY -->
         <div id="startOverlay" class="absolute inset-0 bg-gradient-to-b from-sky-400/90 via-sky-300/95 to-emerald-500/95 z-20 flex flex-col justify-between p-6 pb-12 overflow-y-auto">
             <div class="text-center mt-6">
                 <div class="inline-block bg-white/90 backdrop-blur-md px-6 py-3 rounded-3xl shadow-xl border-2 border-sky-200 mb-2">
@@ -200,7 +200,7 @@
             </div>
         </div>
 
-        <!-- SHOP MODAL (Padded safely above navigation bar) -->
+        <!-- SHOP MODAL -->
         <div id="shopModal" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-40 flex flex-col p-4 pb-10">
             <div class="glass-panel w-full h-full rounded-3xl p-5 pb-8 flex flex-col justify-between overflow-hidden">
                 <div class="flex justify-between items-center pb-3 border-b border-slate-200">
@@ -227,7 +227,7 @@
             </div>
         </div>
 
-        <!-- MISSIONS & ACHIEVEMENTS MODAL (Padded safely above navigation bar) -->
+        <!-- MISSIONS & ACHIEVEMENTS MODAL -->
         <div id="missionsModal" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-40 flex flex-col p-4 pb-10">
             <div class="glass-panel w-full h-full rounded-3xl p-5 pb-8 flex flex-col justify-between overflow-hidden">
                 <div class="flex justify-between items-center pb-3 border-b border-slate-200">
@@ -251,23 +251,12 @@
             </div>
         </div>
 
-        <!-- TOUCH CONTROLS (Raised up via bottom-24 with Left Button, Horizontal Slider Controller, and Right Button) -->
-        <div id="touchControls" class="absolute bottom-24 left-0 w-full px-5 flex justify-between items-center pointer-events-none z-10 md:hidden">
-            <!-- Left Button -->
-            <button id="leftTouchBtn" class="pointer-events-auto w-14 h-14 bg-white/60 active:bg-white/90 backdrop-blur-md rounded-full border-2 border-white flex items-center justify-center text-slate-800 text-xl shadow-lg">
+        <!-- TOUCH CONTROLS (Raised up via bottom-24 with Left and Right directional buttons) -->
+        <div id="touchControls" class="absolute bottom-24 left-0 w-full px-6 flex justify-between pointer-events-none z-10 md:hidden">
+            <button id="leftTouchBtn" class="pointer-events-auto w-16 h-16 bg-white/50 active:bg-white/80 backdrop-blur-md rounded-full border-2 border-white flex items-center justify-center text-slate-800 text-2xl shadow-lg">
                 <i class="fa-solid fa-arrow-left"></i>
             </button>
-
-            <!-- Center Horizontal Slider Controller -->
-            <div id="horizontalSlider" class="pointer-events-auto relative w-36 h-14 bg-white/30 backdrop-blur-md rounded-full border-2 border-white/70 flex items-center px-2 shadow-lg">
-                <div class="absolute inset-x-0 text-center text-[10px] font-game text-white/80 pointer-events-none">SLIDE TO MOVE</div>
-                <div id="sliderThumb" class="absolute left-1/2 -translate-x-1/2 w-10 h-10 bg-white/90 rounded-full shadow-md transition-transform duration-75 flex items-center justify-center text-sky-600 text-xs">
-                    <i class="fa-solid fa-arrows-left-right"></i>
-                </div>
-            </div>
-
-            <!-- Right Button -->
-            <button id="rightTouchBtn" class="pointer-events-auto w-14 h-14 bg-white/60 active:bg-white/90 backdrop-blur-md rounded-full border-2 border-white flex items-center justify-center text-slate-800 text-xl shadow-lg">
+            <button id="rightTouchBtn" class="pointer-events-auto w-16 h-16 bg-white/50 active:bg-white/80 backdrop-blur-md rounded-full border-2 border-white flex items-center justify-center text-slate-800 text-2xl shadow-lg">
                 <i class="fa-solid fa-arrow-right"></i>
             </button>
         </div>
@@ -280,6 +269,9 @@
 
         // Web Audio API Synthesizer for Sound Effects
         let audioCtx = null;
+        let rocketSynth = null;
+        let rocketGain = null;
+
         function initAudio() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -336,6 +328,44 @@
 
                 osc.start(now);
                 osc.stop(now + 0.15);
+            } catch(e) {}
+        }
+
+        // Quiet Rocket Engine Sound Loop for Bullet Bill
+        function updateRocketSound(isRocketActive) {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+
+                if (isRocketActive) {
+                    if (!rocketSynth) {
+                        // Create filtered noise/oscillator for quiet rocket hum
+                        rocketSynth = audioCtx.createOscillator();
+                        rocketGain = audioCtx.createGain();
+                        const filter = audioCtx.createBiquadFilter();
+
+                        rocketSynth.type = 'sawtooth';
+                        rocketSynth.frequency.setValueAtTime(65, audioCtx.currentTime); // Low rumble
+
+                        filter.type = 'lowpass';
+                        filter.frequency.setValueAtTime(180, audioCtx.currentTime);
+
+                        rocketGain.gain.setValueAtTime(0.08, audioCtx.currentTime); // Quiet volume
+
+                        rocketSynth.connect(filter);
+                        filter.connect(rocketGain);
+                        rocketGain.connect(audioCtx.destination);
+
+                        rocketSynth.start();
+                    }
+                } else {
+                    if (rocketSynth) {
+                        rocketSynth.stop();
+                        rocketSynth.disconnect();
+                        rocketSynth = null;
+                        rocketGain = null;
+                    }
+                }
             } catch(e) {}
         }
 
@@ -528,7 +558,9 @@
                 activePowerups.rocketTimer--;
                 player.vy = -14;
                 createParticles(player.x + player.width / 2, player.y + player.height, '#f59e0b', 2);
+                updateRocketSound(true);
             } else {
+                updateRocketSound(false);
                 player.vy += player.gravity;
             }
 
@@ -1013,6 +1045,7 @@
         function exitToMenu() {
             isGameRunning = false;
             isPaused = false;
+            updateRocketSound(false);
             document.getElementById('startOverlay').classList.remove('hidden');
             document.getElementById('pauseOverlay').classList.add('hidden');
             document.getElementById('gameOverOverlay').classList.add('hidden');
@@ -1021,6 +1054,7 @@
 
         function handleGameOver() {
             isGameRunning = false;
+            updateRocketSound(false);
             if (gameScore > userProgress.highScore) {
                 userProgress.highScore = gameScore;
                 triggerToast('New High Score!', 'fa-trophy');
@@ -1106,68 +1140,8 @@
         rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; });
         rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys.right = false; });
 
-        // Horizontal Slider Controller Logic
-        const slider = document.getElementById('horizontalSlider');
-        const thumb = document.getElementById('sliderThumb');
-
-        let sliderTouchId = null;
-        let sliderCenterX = 0;
-
-        slider.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            initAudio();
-            const touch = e.changedTouches[0];
-            sliderTouchId = touch.identifier;
-            const rect = slider.getBoundingClientRect();
-            sliderCenterX = rect.left + rect.width / 2;
-            handleSliderMove(touch.clientX);
-        });
-
-        slider.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                const touch = e.changedTouches[i];
-                if (touch.identifier === sliderTouchId) {
-                    handleSliderMove(touch.clientX);
-                }
-            }
-        });
-
-        slider.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                const touch = e.changedTouches[i];
-                if (touch.identifier === sliderTouchId) {
-                    sliderTouchId = null;
-                    keys.left = false;
-                    keys.right = false;
-                    thumb.style.transform = `translateX(-50%)`;
-                }
-            }
-        });
-
-        function handleSliderMove(clientX) {
-            const maxOffset = 45;
-            let dx = clientX - sliderCenterX;
-            if (dx < -maxOffset) dx = -maxOffset;
-            if (dx > maxOffset) dx = maxOffset;
-
-            thumb.style.transform = `translateX(calc(-50% + ${dx}px))`;
-
-            if (dx < -8) {
-                keys.left = true;
-                keys.right = false;
-            } else if (dx > 8) {
-                keys.right = true;
-                keys.left = false;
-            } else {
-                keys.left = false;
-                keys.right = false;
-            }
-        }
-
         canvas.addEventListener('touchstart', (e) => {
-            if (e.target !== leftBtn && e.target !== rightBtn && !slider.contains(e.target)) {
+            if (e.target !== leftBtn && e.target !== rightBtn) {
                 initAudio();
                 performDoubleJump();
             }
