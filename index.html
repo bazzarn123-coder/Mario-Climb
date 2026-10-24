@@ -18,16 +18,14 @@
             user-select: none;
             -webkit-user-select: none;
             touch-action: manipulation;
-            box-sizing: border-box;
         }
-        html, body {
-            width: 100%;
-            height: 100%;
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: #0f172a;
+            overflow: hidden;
             margin: 0;
             padding: 0;
-            overflow: hidden;
-            background: #0f172a;
-            font-family: 'Quicksand', sans-serif;
+            height: 100vh;
         }
         .font-game {
             font-family: 'Fredoka One', cursive;
@@ -53,10 +51,10 @@
         }
     </style>
 </head>
-<body class="w-full h-full bg-slate-900 select-none overflow-hidden flex justify-center items-center">
+<body class="flex items-center justify-center h-screen w-screen overflow-hidden bg-slate-900 select-none">
 
     <!-- Main Game Container -->
-    <div id="gameContainer" class="relative w-full h-full max-w-md max-h-[100vh] md:max-h-[900px] mx-auto bg-sky-400 shadow-2xl overflow-hidden rounded-none md:rounded-3xl border-0 md:border-4 border-white/50 flex flex-col">
+    <div id="gameContainer" class="relative w-full h-full max-w-md max-h-[900px] bg-sky-400 shadow-2xl overflow-hidden rounded-none md:rounded-3xl border-0 md:border-4 border-white/50 flex flex-col">
         
         <!-- Game Canvas -->
         <canvas id="gameCanvas" class="w-full h-full block bg-transparent relative z-0"></canvas>
@@ -253,8 +251,8 @@
             </div>
         </div>
 
-        <!-- TOUCH CONTROLS (Safe Area Padding) -->
-        <div id="touchControls" class="absolute bottom-6 left-0 w-full px-6 flex justify-between pointer-events-none z-10 md:hidden pb-4" style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom));">
+        <!-- TOUCH CONTROLS -->
+        <div id="touchControls" class="absolute bottom-4 left-0 w-full px-6 flex justify-between pointer-events-none z-10 md:hidden">
             <button id="leftTouchBtn" class="pointer-events-auto w-16 h-16 bg-white/50 active:bg-white/80 backdrop-blur-md rounded-full border-2 border-white flex items-center justify-center text-slate-800 text-2xl shadow-lg">
                 <i class="fa-solid fa-arrow-left"></i>
             </button>
@@ -318,7 +316,7 @@
         const imgBlue = new Image(); imgBlue.src = 'blue.png';
         const imgPurple = new Image(); imgPurple.src = 'purple.png';
         const imgMan = new Image(); imgMan.src = 'man.png';
-        const backgroundImg = new Image(); backgroundImg.src = 'bg.jpg';
+        const imgBullet = new Image(); imgBullet.src = 'bullet.png';
 
         let isGameRunning = false;
         let isPaused = false;
@@ -344,7 +342,7 @@
         let starsList = [];
         let powerupItems = [];
         let particles = [];
-        let marioClouds = [];
+        let clouds = [];
 
         const keys = { left: false, right: false };
 
@@ -380,15 +378,15 @@
             starsList = [];
             powerupItems = [];
             particles = [];
-            marioClouds = [];
+            clouds = [];
 
-            // Mario 64 Style Background Sky Clouds safely within screen bounds
-            for (let i = 0; i < 6; i++) {
-                marioClouds.push({
+            // Generate Clouds
+            for (let i = 0; i < 8; i++) {
+                clouds.push({
                     x: Math.random() * canvas.width,
-                    y: 60 + Math.random() * (canvas.height * 0.65),
-                    size: 45 + Math.random() * 35,
-                    speed: 0.15 + Math.random() * 0.2
+                    y: -Math.random() * 2000,
+                    size: 30 + Math.random() * 40,
+                    speed: 0.2 + Math.random() * 0.3
                 });
             }
 
@@ -411,14 +409,7 @@
         }
 
         function spawnPlatformAt(yPos) {
-            // Base starting width is 100px
-            const initialWidth = 100;
-            // Every 1,000 score reduces the platform width by 5% (compounding: 100 -> 95 -> 90.25 -> 85.73 ...)
-            const thousandsReached = Math.floor(gameScore / 1000);
-            const shrinkMultiplier = Math.pow(0.95, thousandsReached);
-            
-            // Calculate width and enforce a fair minimum jumpable width (35px)
-            const width = Math.max(35, initialWidth * shrinkMultiplier);
+            const width = Math.max(65, 110 - gameScore * 0.15);
             const xPos = Math.random() * (canvas.width - width);
             
             let pType = 'standard';
@@ -469,19 +460,15 @@
                 player.vy += player.gravity;
             }
 
-            // Controls & Directional Facing
+            // Controls
             if (keys.left) {
                 player.vx = -5.5;
+                player.facingRight = false;
             } else if (keys.right) {
                 player.vx = 5.5;
+                player.facingRight = true;
             } else {
                 player.vx *= 0.8;
-            }
-
-            if (player.vx < -0.2) {
-                player.facingRight = false;
-            } else if (player.vx > 0.2) {
-                player.facingRight = true;
             }
 
             player.x += player.vx;
@@ -511,9 +498,11 @@
                         player.y + player.height >= p.y &&
                         player.y + player.height <= p.y + p.height + player.vy) {
                         
+                        // Bounce off platform
                         player.vy = player.jumpStrength;
                         createParticles(player.x + player.width / 2, player.y + player.height, '#ffffff', 5);
 
+                        // Fragile/Delicate platform withstands bounce once then breaks
                         if (p.type === 'fragile') {
                             p.hits++;
                             if (p.hits >= 1) {
@@ -659,30 +648,34 @@
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 1. Draw Background Image Behind All Gameplay
-            if (backgroundImg.complete && backgroundImg.naturalWidth !== 0) {
-                ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
-            } else {
-                ctx.fillStyle = '#38bdf8';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
+            // Sky Background
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 2. Mario 64 Style Drifting Clouds (Screen-space)
-            marioClouds.forEach(c => {
-                c.x += c.speed;
-                if (c.x > canvas.width + 100) c.x = -100;
-                
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-                ctx.beginPath();
-                ctx.arc(c.x, c.y, c.size * 0.5, 0, Math.PI * 2);
-                ctx.arc(c.x + c.size * 0.4, c.y - c.size * 0.15, c.size * 0.45, 0, Math.PI * 2);
-                ctx.arc(c.x - c.size * 0.4, c.y - c.size * 0.15, c.size * 0.45, 0, Math.PI * 2);
-                ctx.fill();
-            });
+            // Fixed Green Ground Layer drawn safely at lowest background canvas level
+            const groundHeight = canvas.height * 0.5;
+            const groundY = canvas.height - groundHeight;
+            ctx.fillStyle = '#10b981'; // Green ground
+            ctx.fillRect(0, groundY, canvas.width, groundHeight);
+            
+            // Grass trim border
+            ctx.fillStyle = '#059669';
+            ctx.fillRect(0, groundY, canvas.width, 10);
 
-            // 3. Gameplay World Translation (Platforms, Coins, Player)
             ctx.save();
             ctx.translate(0, cameraY);
+
+            // Clouds
+            clouds.forEach(c => {
+                c.x += c.speed;
+                if (c.x > canvas.width + 50) c.x = -50;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+                ctx.beginPath();
+                ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2);
+                ctx.arc(c.x + c.size * 0.6, c.y - c.size * 0.2, c.size * 0.7, 0, Math.PI * 2);
+                ctx.arc(c.x - c.size * 0.6, c.y - c.size * 0.2, c.size * 0.7, 0, Math.PI * 2);
+                ctx.fill();
+            });
 
             // Platforms
             platforms.forEach(p => {
@@ -744,17 +737,19 @@
                 ctx.restore();
             });
 
-            // Player character
-            if (imgMan.complete && imgMan.naturalWidth !== 0) {
+            // Player character (Mario or Bullet Bill depending on Rocket status)
+            const activeSprite = (activePowerups.rocketTimer > 0) ? imgBullet : imgMan;
+
+            if (activeSprite.complete && activeSprite.naturalWidth !== 0) {
                 ctx.save();
                 ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
                 if (!player.facingRight) ctx.scale(-1, 1);
-                ctx.drawImage(imgMan, -player.width / 2, -player.height / 2, player.width, player.height);
+                ctx.drawImage(activeSprite, -player.width / 2, -player.height / 2, player.width, player.height);
                 ctx.restore();
             } else {
                 ctx.font = '34px serif';
                 ctx.textAlign = 'center';
-                ctx.fillText('🏃', player.x + player.width / 2, player.y + player.height);
+                ctx.fillText((activePowerups.rocketTimer > 0) ? '🚀' : '🏃', player.x + player.width / 2, player.y + player.height);
             }
 
             // Shield Aura
@@ -792,6 +787,7 @@
             if (activePowerups.magnetTimer > 0) pContainer.appendChild(createHudBadge('fa-magnet', 'bg-red-500', `${Math.ceil(activePowerups.magnetTimer/60)}s`));
             if (activePowerups.shieldHits > 0) pContainer.appendChild(createHudBadge('fa-shield-halved', 'bg-cyan-500', `${activePowerups.shieldHits} Hits`));
             if (activePowerups.doubleJumps > 0) pContainer.appendChild(createHudBadge('fa-shoe-prints', 'bg-emerald-500', `${activePowerups.doubleJumps} Jumps`));
+            if (activePowerups.rocketTimer > 0) pContainer.appendChild(createHudBadge('fa-rocket', 'bg-amber-500', `${Math.ceil(activePowerups.rocketTimer/60)}s`));
         }
 
         function createHudBadge(iconClass, bgColor, text) {
