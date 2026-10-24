@@ -281,7 +281,7 @@
             }
         }
 
-        // Classic Mario Coin Sound (Volume reduced to 0.12)
+        // Classic Mario Coin Sound
         function playCoinSound() {
             try {
                 initAudio();
@@ -295,7 +295,7 @@
                 osc.frequency.setValueAtTime(987.77, now); // B5
                 osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
 
-                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.setValueAtTime(0.05, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
 
                 osc.connect(gain);
@@ -331,7 +331,7 @@
             } catch(e) {}
         }
 
-        // Rocket Engine Sound Loop for Bullet Bill (Volume slightly raised to 0.15)
+        // Rocket Engine Sound Loop for Bullet Bill
         function updateRocketSound(isRocketActive) {
             try {
                 initAudio();
@@ -349,7 +349,7 @@
                         filter.type = 'lowpass';
                         filter.frequency.setValueAtTime(180, audioCtx.currentTime);
 
-                        rocketGain.gain.setValueAtTime(0.15, audioCtx.currentTime); // Slightly raised volume
+                        rocketGain.gain.setValueAtTime(0.15, audioCtx.currentTime);
 
                         rocketSynth.connect(filter);
                         filter.connect(rocketGain);
@@ -462,6 +462,8 @@
             comboMultiplier = 1;
             maxComboInSession = 1;
             comboTimer = 0;
+            keys.left = false;
+            keys.right = false;
 
             player.x = canvas.width / 2 - player.width / 2;
             player.y = canvas.height - 150;
@@ -510,7 +512,12 @@
         }
 
         function spawnPlatformAt(yPos) {
-            const width = Math.max(65, 110 - gameScore * 0.15);
+            // Exactly 5% reduction in platform width per 1,000 score (capped at minimum 50px so it remains fair)
+            const thousands = Math.floor(gameScore / 1000);
+            const shrinkMultiplier = Math.max(0.50, 1 - (thousands * 0.05));
+            const baseWidth = 100;
+            const width = baseWidth * shrinkMultiplier;
+
             const xPos = Math.random() * (canvas.width - width);
             
             let pType = 'standard';
@@ -1044,6 +1051,8 @@
         function exitToMenu() {
             isGameRunning = false;
             isPaused = false;
+            keys.left = false;
+            keys.right = false;
             updateRocketSound(false);
             document.getElementById('startOverlay').classList.remove('hidden');
             document.getElementById('pauseOverlay').classList.add('hidden');
@@ -1053,6 +1062,8 @@
 
         function handleGameOver() {
             isGameRunning = false;
+            keys.left = false;
+            keys.right = false;
             updateRocketSound(false);
             if (gameScore > userProgress.highScore) {
                 userProgress.highScore = gameScore;
@@ -1118,7 +1129,7 @@
             setTimeout(() => toast.classList.add('hidden'), 2200);
         }
 
-        // Key Control Listeners
+        // Key Control Listeners with robust safety clearing
         window.addEventListener('keydown', e => {
             if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
             if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
@@ -1130,14 +1141,27 @@
             if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
         });
 
-        // Touch Listeners for directional buttons
+        window.addEventListener('blur', () => {
+            keys.left = false;
+            keys.right = false;
+        });
+
+        // Touch Listeners for directional buttons with touchcancel & touchend safety guarantees
         const leftBtn = document.getElementById('leftTouchBtn');
         const rightBtn = document.getElementById('rightTouchBtn');
 
-        leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; });
-        leftBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys.left = false; });
-        rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; });
-        rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys.right = false; });
+        const clearLeft = (e) => { e.preventDefault(); keys.left = false; };
+        const clearRight = (e) => { e.preventDefault(); keys.right = false; };
+
+        leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; keys.right = false; });
+        leftBtn.addEventListener('touchend', clearLeft);
+        leftBtn.addEventListener('touchcancel', clearLeft);
+        leftBtn.addEventListener('mouseleave', clearLeft);
+
+        rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; keys.left = false; });
+        rightBtn.addEventListener('touchend', clearRight);
+        rightBtn.addEventListener('touchcancel', clearRight);
+        rightBtn.addEventListener('mouseleave', clearRight);
 
         canvas.addEventListener('touchstart', (e) => {
             if (e.target !== leftBtn && e.target !== rightBtn) {
