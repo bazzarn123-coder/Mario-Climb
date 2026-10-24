@@ -53,10 +53,10 @@
 </head>
 <body class="flex items-center justify-center h-screen w-screen overflow-hidden bg-slate-900 select-none">
 
-    <!-- Main Game Container with bg.png Background Image -->
-    <div id="gameContainer" class="relative w-full h-full max-w-md max-h-[900px] shadow-2xl overflow-hidden rounded-none md:rounded-3xl border-0 md:border-4 border-white/50 flex flex-col bg-cover bg-center" style="background-image: url('bg.png');">
+    <!-- Main Game Container with bg.png and Sky Blue Fallback -->
+    <div id="gameContainer" class="relative w-full h-full max-w-md max-h-[900px] shadow-2xl overflow-hidden rounded-none md:rounded-3xl border-0 md:border-4 border-white/50 flex flex-col bg-sky-400 bg-cover bg-center" style="background-image: url('bg.png');">
         
-        <!-- Game Canvas (Transparent so bg.png shows underneath) -->
+        <!-- Game Canvas -->
         <canvas id="gameCanvas" class="w-full h-full block bg-transparent relative z-0"></canvas>
 
         <!-- HUD Overlay -->
@@ -251,7 +251,7 @@
             </div>
         </div>
 
-        <!-- TOUCH CONTROLS (Raised up via bottom-24 with Left and Right directional buttons) -->
+        <!-- TOUCH CONTROLS -->
         <div id="touchControls" class="absolute bottom-24 left-0 w-full px-6 flex justify-between pointer-events-none z-10 md:hidden">
             <button id="leftTouchBtn" class="pointer-events-auto w-16 h-16 bg-white/50 active:bg-white/80 backdrop-blur-md rounded-full border-2 border-white flex items-center justify-center text-slate-800 text-2xl shadow-lg">
                 <i class="fa-solid fa-arrow-left"></i>
@@ -267,7 +267,6 @@
     <script>
         const STORAGE_KEY = 'mario_climb_save_v3';
 
-        // Web Audio API Synthesizer for Sound Effects
         let audioCtx = null;
         let rocketSynth = null;
         let rocketGain = null;
@@ -281,7 +280,6 @@
             }
         }
 
-        // Classic Mario Coin Sound (Subtle volume at 0.05)
         function playCoinSound() {
             try {
                 initAudio();
@@ -292,8 +290,8 @@
                 const gain = audioCtx.createGain();
 
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(987.77, now); // B5
-                osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+                osc.frequency.setValueAtTime(987.77, now);
+                osc.frequency.setValueAtTime(1318.51, now + 0.08);
 
                 gain.gain.setValueAtTime(0.05, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
@@ -306,7 +304,6 @@
             } catch(e) {}
         }
 
-        // Platform Bouncing Sound Effect
         function playBounceSound() {
             try {
                 initAudio();
@@ -331,7 +328,6 @@
             } catch(e) {}
         }
 
-        // Rocket Engine Sound Loop for Bullet Bill
         function updateRocketSound(isRocketActive) {
             try {
                 initAudio();
@@ -344,7 +340,7 @@
                         const filter = audioCtx.createBiquadFilter();
 
                         rocketSynth.type = 'sawtooth';
-                        rocketSynth.frequency.setValueAtTime(65, audioCtx.currentTime); // Low rumble
+                        rocketSynth.frequency.setValueAtTime(65, audioCtx.currentTime);
 
                         filter.type = 'lowpass';
                         filter.frequency.setValueAtTime(180, audioCtx.currentTime);
@@ -412,7 +408,6 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Sprite Images
         const imgRed = new Image(); imgRed.src = 'red.png';
         const imgBlue = new Image(); imgBlue.src = 'blue.png';
         const imgPurple = new Image(); imgPurple.src = 'purple.png';
@@ -483,17 +478,15 @@
             particles = [];
             clouds = [];
 
-            // Generate Clouds across the sky background
             for (let i = 0; i < 8; i++) {
                 clouds.push({
                     x: Math.random() * canvas.width,
                     y: -Math.random() * 2000,
                     size: 30 + Math.random() * 40,
-                    speed: 0.2 + Math.random() * 0.3
+                    speed: 0.3 + Math.random() * 0.4
                 });
             }
 
-            // Spawn Starting Platform
             platforms.push({
                 x: canvas.width / 2 - 50,
                 y: canvas.height - 80,
@@ -512,7 +505,6 @@
         }
 
         function spawnPlatformAt(yPos) {
-            // Exactly 5% reduction in platform width per 1,000 score
             const thousands = Math.floor(gameScore / 1000);
             const shrinkMultiplier = Math.max(0.50, 1 - (thousands * 0.05));
             const baseWidth = 100;
@@ -559,7 +551,6 @@
         function update() {
             if (!isGameRunning || isPaused) return;
 
-            // Rocket Boost
             if (activePowerups.rocketTimer > 0) {
                 activePowerups.rocketTimer--;
                 player.vy = -14;
@@ -570,7 +561,6 @@
                 player.vy += player.gravity;
             }
 
-            // Controls
             if (keys.left) {
                 player.vx = -5.5;
                 player.facingRight = false;
@@ -588,7 +578,6 @@
 
             player.y += player.vy;
 
-            // Camera Tracking
             const targetCamY = canvas.height * 0.4 - player.y;
             if (targetCamY > cameraY) {
                 cameraY += (targetCamY - cameraY) * 0.1;
@@ -599,7 +588,6 @@
                 }
             }
 
-            // Bounce logic on platforms
             if (player.vy > 0 && activePowerups.rocketTimer <= 0) {
                 platforms.forEach(p => {
                     if (!p.broken &&
@@ -625,7 +613,6 @@
                 });
             }
 
-            // Moving Platforms
             platforms.forEach(p => {
                 if (p.type === 'moving') {
                     p.x += p.vx;
@@ -633,7 +620,6 @@
                 }
             });
 
-            // Coin Magnet
             if (activePowerups.magnetTimer > 0) {
                 activePowerups.magnetTimer--;
                 starsList.forEach(s => {
@@ -649,7 +635,6 @@
                 });
             }
 
-            // Coins Pickup
             starsList.forEach(s => {
                 if (!s.collected) {
                     s.rotation += 0.05;
@@ -670,7 +655,6 @@
                 }
             });
 
-            // Powerups Pickup
             powerupItems.forEach(item => {
                 if (!item.collected &&
                     player.x < item.x + item.width &&
@@ -686,7 +670,6 @@
                 }
             });
 
-            // Combo Timer
             if (comboTimer > 0) {
                 comboTimer--;
                 if (comboTimer <= 0 && comboMultiplier > 1) {
@@ -695,7 +678,6 @@
                 }
             }
 
-            // Spawn platforms
             const highestP = platforms.reduce((min, p) => p.y < min ? p.y : min, canvas.height);
             if (highestP > -cameraY - 200) {
                 spawnPlatformAt(highestP - (60 + Math.random() * 30));
@@ -704,7 +686,6 @@
             platforms = platforms.filter(p => p.y < -cameraY + canvas.height + 100);
             starsList = starsList.filter(s => s.y < -cameraY + canvas.height + 100);
 
-            // Particles
             particles.forEach((pt, idx) => {
                 pt.x += pt.vx;
                 pt.y += pt.vy;
@@ -712,7 +693,6 @@
                 if (pt.alpha <= 0) particles.splice(idx, 1);
             });
 
-            // Fall Death Condition
             if (player.y > -cameraY + canvas.height + 50) {
                 if (activePowerups.shieldHits > 0) {
                     activePowerups.shieldHits--;
@@ -763,10 +743,12 @@
             ctx.save();
             ctx.translate(0, cameraY);
 
-            // Clouds (Restored)
+            // Clouds drifting slowly from left to right
             clouds.forEach(c => {
                 c.x += c.speed;
-                if (c.x > canvas.width + 50) c.x = -50;
+                if (c.x > canvas.width + 100) {
+                    c.x = -100;
+                }
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
                 ctx.beginPath();
                 ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2);
@@ -775,7 +757,6 @@
                 ctx.fill();
             });
 
-            // Platforms
             platforms.forEach(p => {
                 if (p.broken) return;
 
@@ -791,7 +772,6 @@
                 }
             });
 
-            // Coins
             starsList.forEach(s => {
                 if (!s.collected) {
                     ctx.save();
@@ -810,7 +790,6 @@
                 }
             });
 
-            // Items
             powerupItems.forEach(item => {
                 if (!item.collected) {
                     ctx.fillStyle = item.type === 'magnet' ? '#ef4444' : '#f59e0b';
@@ -824,7 +803,6 @@
                 }
             });
 
-            // Particles
             particles.forEach(pt => {
                 ctx.save();
                 ctx.globalAlpha = pt.alpha;
@@ -835,7 +813,6 @@
                 ctx.restore();
             });
 
-            // Player character
             const activeSprite = (activePowerups.rocketTimer > 0) ? imgBullet : imgMan;
 
             if (activeSprite.complete && activeSprite.naturalWidth !== 0) {
@@ -850,7 +827,6 @@
                 ctx.fillText((activePowerups.rocketTimer > 0) ? '🚀' : '🏃', player.x + player.width / 2, player.y + player.height);
             }
 
-            // Shield Aura
             if (activePowerups.shieldHits > 0) {
                 ctx.strokeStyle = '#06b6d4';
                 ctx.lineWidth = 3;
@@ -1113,7 +1089,6 @@
             setTimeout(() => toast.classList.add('hidden'), 2200);
         }
 
-        // Key Control Listeners with robust safety clearing
         window.addEventListener('keydown', e => {
             if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
             if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
@@ -1130,7 +1105,6 @@
             keys.right = false;
         });
 
-        // Touch Listeners for directional buttons with touchcancel & touchend safety guarantees
         const leftBtn = document.getElementById('leftTouchBtn');
         const rightBtn = document.getElementById('rightTouchBtn');
 
