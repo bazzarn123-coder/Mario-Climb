@@ -53,7 +53,7 @@
 </head>
 <body class="flex items-center justify-center h-screen w-screen overflow-hidden bg-slate-900 select-none">
 
-    <!-- Main Game Container with Background Image Support -->
+    <!-- Main Game Container with bg.png Background Image -->
     <div id="gameContainer" class="relative w-full h-full max-w-md max-h-[900px] shadow-2xl overflow-hidden rounded-none md:rounded-3xl border-0 md:border-4 border-white/50 flex flex-col bg-cover bg-center" style="background-image: url('bg.png');">
         
         <!-- Game Canvas (Transparent so bg.png shows underneath) -->
@@ -98,7 +98,7 @@
         </div>
 
         <!-- START SCREEN OVERLAY -->
-        <div id="startOverlay" class="absolute inset-0 bg-sky-400/40 backdrop-blur-[2px] z-20 flex flex-col justify-between p-6 pb-12 overflow-y-auto">
+        <div id="startOverlay" class="absolute inset-0 bg-sky-400/50 backdrop-blur-[2px] z-20 flex flex-col justify-between p-6 pb-12 overflow-y-auto">
             <div class="text-center mt-6">
                 <div class="inline-block bg-white/90 backdrop-blur-md px-6 py-3 rounded-3xl shadow-xl border-2 border-sky-200 mb-2">
                     <h1 class="font-game text-4xl text-sky-600 tracking-wider drop-shadow-sm">MARIO CLIMB</h1>
@@ -281,7 +281,7 @@
             }
         }
 
-        // Classic Mario Coin Sound
+        // Classic Mario Coin Sound (Subtle volume at 0.05)
         function playCoinSound() {
             try {
                 initAudio();
@@ -483,7 +483,7 @@
             particles = [];
             clouds = [];
 
-            // Generate Clouds
+            // Generate Clouds across the sky background
             for (let i = 0; i < 8; i++) {
                 clouds.push({
                     x: Math.random() * canvas.width,
@@ -512,7 +512,7 @@
         }
 
         function spawnPlatformAt(yPos) {
-            // Exactly 5% reduction in platform width per 1,000 score (capped at minimum 50px so it remains fair)
+            // Exactly 5% reduction in platform width per 1,000 score
             const thousands = Math.floor(gameScore / 1000);
             const shrinkMultiplier = Math.max(0.50, 1 - (thousands * 0.05));
             const baseWidth = 100;
@@ -608,12 +608,10 @@
                         player.y + player.height >= p.y &&
                         player.y + player.height <= p.y + p.height + player.vy) {
                         
-                        // Bounce off platform
                         player.vy = player.jumpStrength;
                         playBounceSound();
                         createParticles(player.x + player.width / 2, player.y + player.height, '#ffffff', 5);
 
-                        // Fragile/Delicate platform withstands bounce once then breaks
                         if (p.type === 'fragile') {
                             p.hits++;
                             if (p.hits >= 1) {
@@ -762,18 +760,20 @@
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Fixed Green Ground Layer drawn safely at lowest background canvas level
-            const groundHeight = canvas.height * 0.5;
-            const groundY = canvas.height - groundHeight;
-            ctx.fillStyle = '#10b981'; // Green ground
-            ctx.fillRect(0, groundY, canvas.width, groundHeight);
-            
-            // Grass trim border
-            ctx.fillStyle = '#059669';
-            ctx.fillRect(0, groundY, canvas.width, 10);
-
             ctx.save();
             ctx.translate(0, cameraY);
+
+            // Clouds (Restored)
+            clouds.forEach(c => {
+                c.x += c.speed;
+                if (c.x > canvas.width + 50) c.x = -50;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+                ctx.beginPath();
+                ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2);
+                ctx.arc(c.x + c.size * 0.6, c.y - c.size * 0.2, c.size * 0.7, 0, Math.PI * 2);
+                ctx.arc(c.x - c.size * 0.6, c.y - c.size * 0.2, c.size * 0.7, 0, Math.PI * 2);
+                ctx.fill();
+            });
 
             // Platforms
             platforms.forEach(p => {
@@ -835,7 +835,7 @@
                 ctx.restore();
             });
 
-            // Player character (Mario or Bullet Bill depending on Rocket status)
+            // Player character
             const activeSprite = (activePowerups.rocketTimer > 0) ? imgBullet : imgMan;
 
             if (activeSprite.complete && activeSprite.naturalWidth !== 0) {
@@ -859,7 +859,7 @@
                 ctx.stroke();
             }
 
-v            ctx.restore();
+            ctx.restore();
 
             if (isGameRunning) {
                 update();
@@ -1098,6 +1098,7 @@ v            ctx.restore();
 
         function openModal(id) {
             updateMenuUI();
+            document.getElementById(id).classList.remove('hidden');
         }
 
         function closeModal(id) {
