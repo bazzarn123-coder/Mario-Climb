@@ -281,7 +281,7 @@
             }
         }
 
-        // Classic Mario Coin Sound
+        // Classic Mario Coin Sound (Volume reduced to 0.12)
         function playCoinSound() {
             try {
                 initAudio();
@@ -295,7 +295,7 @@
                 osc.frequency.setValueAtTime(987.77, now); // B5
                 osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
 
-                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.setValueAtTime(0.12, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
 
                 osc.connect(gain);
@@ -331,7 +331,7 @@
             } catch(e) {}
         }
 
-        // Quiet Rocket Engine Sound Loop for Bullet Bill
+        // Rocket Engine Sound Loop for Bullet Bill (Volume slightly raised to 0.15)
         function updateRocketSound(isRocketActive) {
             try {
                 initAudio();
@@ -339,7 +339,6 @@
 
                 if (isRocketActive) {
                     if (!rocketSynth) {
-                        // Create filtered noise/oscillator for quiet rocket hum
                         rocketSynth = audioCtx.createOscillator();
                         rocketGain = audioCtx.createGain();
                         const filter = audioCtx.createBiquadFilter();
@@ -350,7 +349,7 @@
                         filter.type = 'lowpass';
                         filter.frequency.setValueAtTime(180, audioCtx.currentTime);
 
-                        rocketGain.gain.setValueAtTime(0.08, audioCtx.currentTime); // Quiet volume
+                        rocketGain.gain.setValueAtTime(0.15, audioCtx.currentTime); // Slightly raised volume
 
                         rocketSynth.connect(filter);
                         filter.connect(rocketGain);
