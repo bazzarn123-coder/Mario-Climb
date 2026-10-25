@@ -18,16 +18,14 @@
             user-select: none;
             -webkit-user-select: none;
             touch-action: manipulation;
-            box-sizing: border-box;
         }
-        html, body {
-            width: 100%;
-            height: 100%;
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: #0f172a;
+            overflow: hidden;
             margin: 0;
             padding: 0;
-            overflow: hidden;
-            background: #0f172a;
-            font-family: 'Quicksand', sans-serif;
+            height: 100vh;
         }
         .font-game {
             font-family: 'Fredoka One', cursive;
@@ -53,13 +51,13 @@
         }
     </style>
 </head>
-<body class="w-full h-full bg-slate-900 select-none overflow-hidden flex justify-center items-center">
+<body class="flex items-center justify-center h-screen w-screen overflow-hidden bg-slate-900 select-none">
 
-    <!-- Main Game Container (Fully Dynamic Stretch) -->
-    <div id="gameContainer" class="relative w-full h-full max-w-md max-h-[100vh] md:max-h-[900px] mx-auto bg-sky-400 shadow-2xl overflow-hidden rounded-none md:rounded-3xl border-0 md:border-4 border-white/50 flex flex-col">
+    <!-- Main Game Container with bg.jpg Background Image -->
+    <div id="gameContainer" class="relative w-full h-full max-w-md max-h-[900px] shadow-2xl overflow-hidden rounded-none md:rounded-3xl border-0 md:border-4 border-white/50 flex flex-col bg-cover bg-center" style="background-image: url('bg.jpg');">[span_3](start_span)[span_3](end_span)
         
         <!-- Game Canvas -->
-        <canvas id="gameCanvas" class="w-full h-full block bg-transparent relative z-0"></canvas>
+        <canvas id="gameCanvas" class="w-full h-full block bg-transparent relative z-0"></canvas>[span_4](start_span)[span_4](end_span)
 
         <!-- HUD Overlay -->
         <div id="hud" class="absolute top-0 left-0 w-full p-4 flex justify-between items-start pointer-events-none z-10">
@@ -100,7 +98,7 @@
         </div>
 
         <!-- START SCREEN OVERLAY -->
-        <div id="startOverlay" class="absolute inset-0 bg-gradient-to-b from-sky-400/90 via-sky-300/95 to-emerald-500/95 z-20 flex flex-col justify-between p-6 overflow-y-auto">
+        <div id="startOverlay" class="absolute inset-0 bg-sky-900/30 backdrop-blur-[2px] z-20 flex flex-col justify-between p-6 pb-12 overflow-y-auto">
             <div class="text-center mt-6">
                 <div class="inline-block bg-white/90 backdrop-blur-md px-6 py-3 rounded-3xl shadow-xl border-2 border-sky-200 mb-2">
                     <h1 class="font-game text-4xl text-sky-600 tracking-wider drop-shadow-sm">MARIO CLIMB</h1>
@@ -129,7 +127,7 @@
             </div>
 
             <!-- Action Buttons Grid -->
-            <div class="flex flex-col gap-3 mb-4 w-full max-w-xs mx-auto">
+            <div class="flex flex-col gap-3 mb-6 w-full max-w-xs mx-auto">
                 <button onclick="startGame()" class="btn-bounce w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-game text-2xl py-4 rounded-2xl shadow-lg border-2 border-emerald-300 flex items-center justify-center gap-3">
                     <i class="fa-solid fa-play"></i> PLAY NOW
                 </button>
@@ -203,8 +201,8 @@
         </div>
 
         <!-- SHOP MODAL -->
-        <div id="shopModal" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-40 flex flex-col p-4">
-            <div class="glass-panel w-full h-full rounded-3xl p-5 flex flex-col justify-between overflow-hidden">
+        <div id="shopModal" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-40 flex flex-col p-4 pb-10">
+            <div class="glass-panel w-full h-full rounded-3xl p-5 pb-8 flex flex-col justify-between overflow-hidden">
                 <div class="flex justify-between items-center pb-3 border-b border-slate-200">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-store text-amber-500 text-xl"></i>
@@ -230,8 +228,8 @@
         </div>
 
         <!-- MISSIONS & ACHIEVEMENTS MODAL -->
-        <div id="missionsModal" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-40 flex flex-col p-4">
-            <div class="glass-panel w-full h-full rounded-3xl p-5 flex flex-col justify-between overflow-hidden">
+        <div id="missionsModal" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-40 flex flex-col p-4 pb-10">
+            <div class="glass-panel w-full h-full rounded-3xl p-5 pb-8 flex flex-col justify-between overflow-hidden">
                 <div class="flex justify-between items-center pb-3 border-b border-slate-200">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-trophy text-indigo-500 text-xl"></i>
@@ -253,8 +251,8 @@
             </div>
         </div>
 
-        <!-- TOUCH CONTROLS (Safe Area Padding) -->
-        <div id="touchControls" class="absolute bottom-6 left-0 w-full px-6 flex justify-between pointer-events-none z-10 md:hidden pb-4" style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom));">
+        <!-- TOUCH CONTROLS -->
+        <div id="touchControls" class="absolute bottom-24 left-0 w-full px-6 flex justify-between pointer-events-none z-10 md:hidden">
             <button id="leftTouchBtn" class="pointer-events-auto w-16 h-16 bg-white/50 active:bg-white/80 backdrop-blur-md rounded-full border-2 border-white flex items-center justify-center text-slate-800 text-2xl shadow-lg">
                 <i class="fa-solid fa-arrow-left"></i>
             </button>
@@ -268,6 +266,103 @@
     <!-- GAME ENGINE CODE -->
     <script>
         const STORAGE_KEY = 'mario_climb_save_v3';
+
+        let audioCtx = null;
+        let rocketSynth = null;
+        let rocketGain = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playCoinSound() {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(987.77, now);
+                osc.frequency.setValueAtTime(1318.51, now + 0.08);
+
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.35);
+            } catch(e) {}
+        }
+
+        function playBounceSound() {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(320, now + 0.12);
+
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } catch(e) {}
+        }
+
+        function updateRocketSound(isRocketActive) {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+
+                if (isRocketActive) {
+                    if (!rocketSynth) {
+                        rocketSynth = audioCtx.createOscillator();
+                        rocketGain = audioCtx.createGain();
+                        const filter = audioCtx.createBiquadFilter();
+
+                        rocketSynth.type = 'sawtooth';
+                        rocketSynth.frequency.setValueAtTime(65, audioCtx.currentTime);
+
+                        filter.type = 'lowpass';
+                        filter.frequency.setValueAtTime(180, audioCtx.currentTime);
+
+                        rocketGain.gain.setValueAtTime(0.45, audioCtx.currentTime);
+
+                        rocketSynth.connect(filter);
+                        filter.connect(rocketGain);
+                        rocketGain.connect(audioCtx.destination);
+
+                        rocketSynth.start();
+                    }
+                } else {
+                    if (rocketSynth) {
+                        try { rocketSynth.stop(); } catch(e){}
+                        try { rocketSynth.disconnect(); } catch(e){}
+                        rocketSynth = null;
+                        rocketGain = null;
+                    }
+                }
+            } catch(e) {}
+        }
 
         let userProgress = {
             stars: 0,
@@ -313,12 +408,11 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Sprite Images
         const imgRed = new Image(); imgRed.src = 'red.png';
         const imgBlue = new Image(); imgBlue.src = 'blue.png';
         const imgPurple = new Image(); imgPurple.src = 'purple.png';
         const imgMan = new Image(); imgMan.src = 'man.png';
-        const backgroundImg = new Image(); backgroundImg.src = 'bg.jpg';
+        const imgBullet = new Image(); imgBullet.src = 'bullet.png';
 
         let isGameRunning = false;
         let isPaused = false;
@@ -328,7 +422,7 @@
         let comboMultiplier = 1;
         let maxComboInSession = 1;
         let comboTimer = 0;
-        let continueCost = 50;
+        let continueCost = 50; // Resets to 50 on new game, doubles each time used
         let activePowerups = { magnetTimer: 0, shieldHits: 0, doubleJumps: 0, rocketTimer: 0 };
 
         const player = {
@@ -344,7 +438,7 @@
         let starsList = [];
         let powerupItems = [];
         let particles = [];
-        let marioClouds = [];
+        let clouds = [];
 
         const keys = { left: false, right: false };
 
@@ -363,6 +457,9 @@
             comboMultiplier = 1;
             maxComboInSession = 1;
             comboTimer = 0;
+            continueCost = 50; // Reset continue cost when starting a fresh game
+            keys.left = false;
+            keys.right = false;
 
             player.x = canvas.width / 2 - player.width / 2;
             player.y = canvas.height - 150;
@@ -380,19 +477,17 @@
             starsList = [];
             powerupItems = [];
             particles = [];
-            marioClouds = [];
+            clouds = [];
 
-            // Mario 64 Style Background Sky Clouds safely within screen bounds
-            for (let i = 0; i < 6; i++) {
-                marioClouds.push({
+            for (let i = 0; i < 10; i++) {
+                clouds.push({
                     x: Math.random() * canvas.width,
-                    y: 60 + Math.random() * (canvas.height * 0.65),
-                    size: 45 + Math.random() * 35,
-                    speed: 0.15 + Math.random() * 0.2
+                    y: Math.random() * (canvas.height * 0.5),
+                    size: 30 + Math.random() * 40,
+                    speed: 0.5 + Math.random() * 0.5
                 });
             }
 
-            // Spawn Starting Platform
             platforms.push({
                 x: canvas.width / 2 - 50,
                 y: canvas.height - 80,
@@ -411,10 +506,12 @@
         }
 
         function spawnPlatformAt(yPos) {
-            // Shrinks platform width by 5% for every 1,000 points of score
-            const shrinkMultiplier = Math.pow(0.95, Math.floor(gameScore / 1000));
-            const baseWidth = Math.max(50, 110 - gameScore * 0.15);
+            const thousands = Math.floor(gameScore / 1000);
+            const baseWidth = 100;
+            const minMultiplier = player.width / baseWidth; 
+            const shrinkMultiplier = Math.max(minMultiplier, 1 - (thousands * 0.05));
             const width = baseWidth * shrinkMultiplier;
+
             const xPos = Math.random() * (canvas.width - width);
             
             let pType = 'standard';
@@ -456,28 +553,24 @@
         function update() {
             if (!isGameRunning || isPaused) return;
 
-            // Rocket Boost
             if (activePowerups.rocketTimer > 0) {
                 activePowerups.rocketTimer--;
                 player.vy = -14;
                 createParticles(player.x + player.width / 2, player.y + player.height, '#f59e0b', 2);
+                updateRocketSound(true);
             } else {
+                updateRocketSound(false);
                 player.vy += player.gravity;
             }
 
-            // Controls & Directional Facing
             if (keys.left) {
                 player.vx = -5.5;
+                player.facingRight = false;
             } else if (keys.right) {
                 player.vx = 5.5;
+                player.facingRight = true;
             } else {
                 player.vx *= 0.8;
-            }
-
-            if (player.vx < -0.2) {
-                player.facingRight = false;
-            } else if (player.vx > 0.2) {
-                player.facingRight = true;
             }
 
             player.x += player.vx;
@@ -487,7 +580,6 @@
 
             player.y += player.vy;
 
-            // Camera Tracking
             const targetCamY = canvas.height * 0.4 - player.y;
             if (targetCamY > cameraY) {
                 cameraY += (targetCamY - cameraY) * 0.1;
@@ -498,7 +590,6 @@
                 }
             }
 
-            // Bounce logic on platforms
             if (player.vy > 0 && activePowerups.rocketTimer <= 0) {
                 platforms.forEach(p => {
                     if (!p.broken &&
@@ -508,6 +599,7 @@
                         player.y + player.height <= p.y + p.height + player.vy) {
                         
                         player.vy = player.jumpStrength;
+                        playBounceSound();
                         createParticles(player.x + player.width / 2, player.y + player.height, '#ffffff', 5);
 
                         if (p.type === 'fragile') {
@@ -523,7 +615,6 @@
                 });
             }
 
-            // Moving Platforms
             platforms.forEach(p => {
                 if (p.type === 'moving') {
                     p.x += p.vx;
@@ -531,7 +622,6 @@
                 }
             });
 
-            // Coin Magnet
             if (activePowerups.magnetTimer > 0) {
                 activePowerups.magnetTimer--;
                 starsList.forEach(s => {
@@ -547,7 +637,6 @@
                 });
             }
 
-            // Coins Pickup
             starsList.forEach(s => {
                 if (!s.collected) {
                     s.rotation += 0.05;
@@ -557,6 +646,7 @@
                         player.y + player.height > s.y) {
                         
                         s.collected = true;
+                        playCoinSound();
                         const gained = 1 * comboMultiplier;
                         sessionStars += gained;
                         userProgress.stars += gained;
@@ -567,7 +657,6 @@
                 }
             });
 
-            // Powerups Pickup
             powerupItems.forEach(item => {
                 if (!item.collected &&
                     player.x < item.x + item.width &&
@@ -578,11 +667,11 @@
                     item.collected = true;
                     if (item.type === 'magnet') activePowerups.magnetTimer = POWERUPS_CONFIG.magnet.durations[userProgress.upgrades.magnet || 0];
                     if (item.type === 'rocket') activePowerups.rocketTimer = POWERUPS_CONFIG.rocket.durations[userProgress.upgrades.rocket || 0];
+                    playCoinSound();
                     triggerToast(`Activated ${item.type.toUpperCase()}!`, 'fa-bolt');
                 }
             });
 
-            // Combo Timer
             if (comboTimer > 0) {
                 comboTimer--;
                 if (comboTimer <= 0 && comboMultiplier > 1) {
@@ -591,7 +680,6 @@
                 }
             }
 
-            // Spawn platforms
             const highestP = platforms.reduce((min, p) => p.y < min ? p.y : min, canvas.height);
             if (highestP > -cameraY - 200) {
                 spawnPlatformAt(highestP - (60 + Math.random() * 30));
@@ -600,7 +688,6 @@
             platforms = platforms.filter(p => p.y < -cameraY + canvas.height + 100);
             starsList = starsList.filter(s => s.y < -cameraY + canvas.height + 100);
 
-            // Particles
             particles.forEach((pt, idx) => {
                 pt.x += pt.vx;
                 pt.y += pt.vy;
@@ -608,7 +695,6 @@
                 if (pt.alpha <= 0) particles.splice(idx, 1);
             });
 
-            // Fall Death Condition
             if (player.y > -cameraY + canvas.height + 50) {
                 if (activePowerups.shieldHits > 0) {
                     activePowerups.shieldHits--;
@@ -635,6 +721,7 @@
             if (activePowerups.doubleJumps > 0) {
                 activePowerups.doubleJumps--;
                 player.vy = player.jumpStrength * 1.1;
+                playBounceSound();
                 createParticles(player.x + player.width/2, player.y + player.height, '#10b981', 10);
                 triggerToast('Double Jump Used!', 'fa-shoe-prints');
             }
@@ -655,32 +742,22 @@
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 1. Draw Background Image Behind All Gameplay
-            if (backgroundImg.complete && backgroundImg.naturalWidth !== 0) {
-                ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
-            } else {
-                ctx.fillStyle = '#38bdf8';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
-
-            // 2. Mario 64 Style Drifting Clouds (Screen-space)
-            marioClouds.forEach(c => {
+            clouds.forEach(c => {
                 c.x += c.speed;
-                if (c.x > canvas.width + 100) c.x = -100;
-                
+                if (c.x > canvas.width + 100) {
+                    c.x = -100;
+                }
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
                 ctx.beginPath();
-                ctx.arc(c.x, c.y, c.size * 0.5, 0, Math.PI * 2);
-                ctx.arc(c.x + c.size * 0.4, c.y - c.size * 0.15, c.size * 0.45, 0, Math.PI * 2);
-                ctx.arc(c.x - c.size * 0.4, c.y - c.size * 0.15, c.size * 0.45, 0, Math.PI * 2);
+                ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2);
+                ctx.arc(c.x + c.size * 0.6, c.y - c.size * 0.2, c.size * 0.7, 0, Math.PI * 2);
+                ctx.arc(c.x - c.size * 0.6, c.y - c.size * 0.2, c.size * 0.7, 0, Math.PI * 2);
                 ctx.fill();
             });
 
-            // 3. Gameplay World Translation (Platforms, Coins, Player)
             ctx.save();
             ctx.translate(0, cameraY);
 
-            // Platforms
             platforms.forEach(p => {
                 if (p.broken) return;
 
@@ -696,7 +773,6 @@
                 }
             });
 
-            // Coins
             starsList.forEach(s => {
                 if (!s.collected) {
                     ctx.save();
@@ -715,7 +791,6 @@
                 }
             });
 
-            // Items
             powerupItems.forEach(item => {
                 if (!item.collected) {
                     ctx.fillStyle = item.type === 'magnet' ? '#ef4444' : '#f59e0b';
@@ -729,7 +804,6 @@
                 }
             });
 
-            // Particles
             particles.forEach(pt => {
                 ctx.save();
                 ctx.globalAlpha = pt.alpha;
@@ -740,20 +814,20 @@
                 ctx.restore();
             });
 
-            // Player character
-            if (imgMan.complete && imgMan.naturalWidth !== 0) {
+            const activeSprite = (activePowerups.rocketTimer > 0) ? imgBullet : imgMan;
+
+            if (activeSprite.complete && activeSprite.naturalWidth !== 0) {
                 ctx.save();
                 ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
                 if (!player.facingRight) ctx.scale(-1, 1);
-                ctx.drawImage(imgMan, -player.width / 2, -player.height / 2, player.width, player.height);
+                ctx.drawImage(activeSprite, -player.width / 2, -player.height / 2, player.width, player.height);
                 ctx.restore();
             } else {
                 ctx.font = '34px serif';
                 ctx.textAlign = 'center';
-                ctx.fillText('🏃', player.x + player.width / 2, player.y + player.height);
+                ctx.fillText((activePowerups.rocketTimer > 0) ? '🚀' : '🏃', player.x + player.width / 2, player.y + player.height);
             }
 
-            // Shield Aura
             if (activePowerups.shieldHits > 0) {
                 ctx.strokeStyle = '#06b6d4';
                 ctx.lineWidth = 3;
@@ -788,6 +862,7 @@
             if (activePowerups.magnetTimer > 0) pContainer.appendChild(createHudBadge('fa-magnet', 'bg-red-500', `${Math.ceil(activePowerups.magnetTimer/60)}s`));
             if (activePowerups.shieldHits > 0) pContainer.appendChild(createHudBadge('fa-shield-halved', 'bg-cyan-500', `${activePowerups.shieldHits} Hits`));
             if (activePowerups.doubleJumps > 0) pContainer.appendChild(createHudBadge('fa-shoe-prints', 'bg-emerald-500', `${activePowerups.doubleJumps} Jumps`));
+            if (activePowerups.rocketTimer > 0) pContainer.appendChild(createHudBadge('fa-rocket', 'bg-amber-500', `${Math.ceil(activePowerups.rocketTimer/60)}s`));
         }
 
         function createHudBadge(iconClass, bgColor, text) {
@@ -915,6 +990,7 @@
         }
 
         function startGame() {
+            initAudio();
             document.getElementById('startOverlay').classList.add('hidden');
             document.getElementById('gameOverOverlay').classList.add('hidden');
             document.getElementById('pauseOverlay').classList.add('hidden');
@@ -936,6 +1012,9 @@
         function exitToMenu() {
             isGameRunning = false;
             isPaused = false;
+            keys.left = false;
+            keys.right = false;
+            updateRocketSound(false);
             document.getElementById('startOverlay').classList.remove('hidden');
             document.getElementById('pauseOverlay').classList.add('hidden');
             document.getElementById('gameOverOverlay').classList.add('hidden');
@@ -944,6 +1023,9 @@
 
         function handleGameOver() {
             isGameRunning = false;
+            keys.left = false;
+            keys.right = false;
+            updateRocketSound(false);
             if (gameScore > userProgress.highScore) {
                 userProgress.highScore = gameScore;
                 triggerToast('New High Score!', 'fa-trophy');
@@ -971,7 +1053,7 @@
         function buyContinue() {
             if (userProgress.stars >= continueCost) {
                 userProgress.stars -= continueCost;
-                continueCost += 25;
+                continueCost *= 2; // Double the continue price for any subsequent continues in this session
                 saveData();
 
                 player.y = -cameraY + canvas.height / 2;
@@ -1008,7 +1090,6 @@
             setTimeout(() => toast.classList.add('hidden'), 2200);
         }
 
-        // Key Control Listeners
         window.addEventListener('keydown', e => {
             if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
             if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
@@ -1020,17 +1101,32 @@
             if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
         });
 
-        // Touch Listeners
+        window.addEventListener('blur', () => {
+            keys.left = false;
+            keys.right = false;
+        });
+
         const leftBtn = document.getElementById('leftTouchBtn');
         const rightBtn = document.getElementById('rightTouchBtn');
 
-        leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; });
-        leftBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys.left = false; });
-        rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; });
-        rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys.right = false; });
+        const clearLeft = (e) => { e.preventDefault(); keys.left = false; };
+        const clearRight = (e) => { e.preventDefault(); keys.right = false; };
+
+        leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; keys.right = false; });
+        leftBtn.addEventListener('touchend', clearLeft);
+        leftBtn.addEventListener('touchcancel', clearLeft);
+        leftBtn.addEventListener('mouseleave', clearLeft);
+
+        rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; keys.left = false; });
+        rightBtn.addEventListener('touchend', clearRight);
+        rightBtn.addEventListener('touchcancel', clearRight);
+        rightBtn.addEventListener('mouseleave', clearRight);
 
         canvas.addEventListener('touchstart', (e) => {
-            if (e.target !== leftBtn && e.target !== rightBtn) performDoubleJump();
+            if (e.target !== leftBtn && e.target !== rightBtn) {
+                initAudio();
+                performDoubleJump();
+            }
         });
 
         window.onload = () => {
